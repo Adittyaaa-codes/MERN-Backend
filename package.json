@@ -1,0 +1,15 @@
+{
+  "name": "mern-project",
+  "version": "1.0.0",
+  "description": "First MERN Stack project",
+  "keywords": [
+    "MERN"
+  ],
+  "license": "ISC",
+  "author": "Aditya Mallick",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
