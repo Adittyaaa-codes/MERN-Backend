@@ -16,6 +16,11 @@ app.post('/name', (req, res) => {
     res.send(`Hello, ${name}!`);
 });
 
+app.post('/age', (req, res) => {
+    const age = req.body.age;
+    res.send(`You are ${age} years old!`);
+});
+
 connectDB()
 .then(() => {
     console.log('Database connected successfully');
