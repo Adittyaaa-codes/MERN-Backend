@@ -29,7 +29,6 @@ const userSchema = new mongoose.Schema({
     },
     coverImage:{
         type:String, //url
-        required: true
     },
     password:{
         type:String,
@@ -51,20 +50,25 @@ userSchema.methods.comparePassword = async function(password){
     return await bcrypt.compare(password, this.password);
 }
 
+import dotenv from 'dotenv';
+dotenv.config({
+    path: './.env'
+});
+
 userSchema.methods.generateAccessToken = function(){
     return jwt.sign({
         _id: this._id,
         fullname: this.fullname,
         email: this.email,
         username: this.username
-    }, process.env.JWT_SECRET_KEY, {expiresIn: process.env.ACCESS_TOKEN_EXPIRES});
+    }, process.env.JWT_ACCESS_SECRET_KEY, {expiresIn: process.env.ACCESS_TOKEN_EXPIRES});
 }
 
 userSchema.methods.generateRefreshToken = function(){
     return jwt.sign({
         _id: this._id
-    }, process.env.JWT_SECRET_KEY, {expiresIn: process.env.REFRESH_TOKEN_EXPIRES});
+    }, process.env.JWT_REFRESH_SECRET_KEY, {expiresIn: process.env.REFRESH_TOKEN_EXPIRES});
 }
 const User = mongoose.model('User', userSchema);
 
-export default {User};
+export default User;

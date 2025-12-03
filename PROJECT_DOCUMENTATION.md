@@ -27,11 +27,19 @@ Youtube-Backend-MERN/
     ├── app.js            # Express app configuration
     ├── constants.js      # Application constants
     ├── index.js          # Main server entry point
-    ├── controllers/      # Route controllers (future)
+    ├── controllers/      # Route controllers
     ├── db/               # Database configuration
     │   └── index.js      # MongoDB connection
-    ├── middlewares/      # Custom middleware (future)
-    └── routes/           # API routes (future)
+    ├── middlewares/      # Custom middleware
+    ├── models/           # Database models
+    │   ├── user.models.js # User model with authentication
+    │   └── video.models.js # Video model
+    ├── routes/           # API routes
+    └── utils/            # Utility functions
+        ├── ApiError.js   # Custom error handling class
+        ├── ApiResponse.js # Standardized API response
+        ├── AsyncHandler.js # Async error wrapper
+        └── Clodinary.js  # Cloudinary file upload service
 ```
 
 ---
@@ -41,10 +49,15 @@ Youtube-Backend-MERN/
 ### Production Dependencies
 ```json
 {
-  "cookie-parser": "^1.4.7",    // Parse cookies in requests
-  "dotenv": "^17.2.3",          // Load environment variables
-  "express": "^5.1.0",          // Web framework
-  "mongoose": "^8.19.2"         // MongoDB ODM
+  "bcrypt": "^6.0.0",                        // Password hashing
+  "cloudinary": "^2.8.0",                   // Cloud file storage
+  "cookie-parser": "^1.4.7",                // Parse cookies in requests
+  "dotenv": "^17.2.3",                      // Load environment variables
+  "express": "^5.1.0",                      // Web framework
+  "jsonwebtoken": "^9.0.2",                 // JWT authentication
+  "mongoose": "^8.19.2",                    // MongoDB ODM
+  "mongoose-aggregate-paginate-v2": "^1.1.4", // Pagination for aggregation
+  "multer": "^2.0.2"                        // File upload middleware
 }
 ```
 
@@ -71,6 +84,10 @@ Youtube-Backend-MERN/
 ```env
 DATABASE_URL=mongodb+srv://username:password@cluster.mongodb.net
 PORT=5000
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+JWT_SECRET=your_jwt_secret_key
 ```
 
 **⚠️ Important:** Never commit `.env` file to git. It's included in `.gitignore`.
@@ -97,6 +114,11 @@ app.get('/', (req, res) => {
 app.post('/name', (req, res) => {
     const name = req.body.name;
     res.send(`Hello, ${name}!`);
+});
+
+app.post('/age', (req, res) => {
+    const age = req.body.age;
+    res.send(`You are ${age} years old!`);
 });
 
 connectDB()
@@ -167,6 +189,118 @@ export default connectDB;
 export const DB_NAME = 'youtube_mern';
 ```
 
+### 5. `src/utils/Clodinary.js` - File Upload Service
+```javascript
+import {v2 as cloudinary} from 'cloudinary';
+import fs from "fs"
+import dotenv from 'dotenv';
+dotenv.config();
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const uploadCloudinary = async(localFilePath)=>{
+    try{
+        if (!localFilePath) return null;
+        const response = await cloudinary.uploader.upload(localFilePath,{
+            resource_type:"auto",
+        });
+        console.log(response.url);
+        fs.unlinkSync(localFilePath);
+        return response;
+    }catch(error){
+        fs.unlinkSync(localFilePath);
+        return null;
+    }
+}
+
+export default uploadCloudinary;
+```
+
+**Key Features:**
+- Cloudinary integration for file uploads
+- Automatic file cleanup after upload
+- Support for all file types (auto detection)
+- Error handling with local file cleanup
+
+### 6. `src/utils/ApiError.js` - Custom Error Handling
+```javascript
+class ApiError extends Error{
+    constructor(statusCode, message){
+        super(message);
+        this.statusCode = statusCode;
+    }
+}
+
+export default ApiError;
+```
+
+### 7. `src/utils/ApiResponse.js` - Standardized API Responses
+```javascript
+class ApiResponse {
+    constructor(success, message, data = null) {
+        this.success = success;
+        this.message = message;
+        this.data = data;
+    }
+}   
+
+export default ApiResponse;
+```
+
+### 8. `src/utils/AsyncHandler.js` - Async Error Wrapper
+```javascript
+const AsyncHandler = (fn) => (req,res,next) => {
+    Promise.resolve(fn(req,res,next))
+    .catch((error) => next(error));
+}
+
+export default AsyncHandler;
+```
+
+### 9. `src/models/user.models.js` - User Model with Authentication
+```javascript
+import mongoose, {Schema} from "mongoose";
+import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
+
+const userSchema = new mongoose.Schema({
+    username: {
+        type: String,
+        unique: true,
+        required: true,
+        lowercase: true,
+        trim: true,
+        index: true
+    },
+    fullname: {
+        type: String,
+        required: true,
+        trim: true,
+        index: true
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true
+    },
+    // Additional fields for avatar, coverImage, password, etc.
+});
+
+// Pre-save password hashing and JWT methods included
+```
+
+**Key Features:**
+- User authentication with bcrypt
+- JWT token generation
+- Indexed fields for better performance
+- Avatar and cover image support
+
 ---
 
 ## 🚀 Getting Started
@@ -211,6 +345,7 @@ export const DB_NAME = 'youtube_mern';
 |--------|----------|-------------|--------------|----------|
 | GET    | `/`      | Health check | None | `"API is running..."` |
 | POST   | `/name`  | Greet user  | `{"name": "John"}` | `"Hello, John!"` |
+| POST   | `/age`   | Age response | `{"age": "25"}` | `"You are 25 years old!"` |
 
 ### Testing API Endpoints
 
@@ -223,6 +358,11 @@ curl http://localhost:5000/
 curl -X POST http://localhost:5000/name \
   -H "Content-Type: application/json" \
   -d '{"name": "Aditya"}'
+
+# Send age
+curl -X POST http://localhost:5000/age \
+  -H "Content-Type: application/json" \
+  -d '{"age": "25"}'
 ```
 
 #### Using Postman
@@ -230,7 +370,7 @@ curl -X POST http://localhost:5000/name \
    - URL: `http://localhost:5000/`
    - Method: GET
 
-2. **POST Request**
+2. **POST Request - Name**
    - URL: `http://localhost:5000/name`
    - Method: POST
    - Headers: `Content-Type: application/json`
@@ -240,6 +380,51 @@ curl -X POST http://localhost:5000/name \
        "name": "Your Name Here"
      }
      ```
+
+3. **POST Request - Age**
+   - URL: `http://localhost:5000/age`
+   - Method: POST
+   - Headers: `Content-Type: application/json`
+   - Body (raw JSON):
+     ```json
+     {
+       "age": "25"
+     }
+     ```
+
+---
+
+## 🏗️ Current Implementation Status
+
+### ✅ Completed Components
+
+| Component | Status | Description |
+|-----------|--------|-------------|
+| **Project Structure** | ✅ Complete | Professional folder organization |
+| **Database Connection** | ✅ Complete | MongoDB with error handling |
+| **User Model** | ✅ Complete | Authentication ready with bcrypt/JWT |
+| **Video Model** | ✅ Complete | Database schema for videos |
+| **File Upload Service** | ✅ Complete | Cloudinary integration |
+| **Error Handling** | ✅ Complete | Custom ApiError class |
+| **Response System** | ✅ Complete | Standardized ApiResponse |
+| **Async Wrapper** | ✅ Complete | AsyncHandler for error management |
+| **Environment Setup** | ✅ Complete | All production dependencies |
+
+### 🚧 Ready for Implementation
+
+| Component | Status | Description |
+|-----------|--------|-------------|
+| **Controllers** | 📁 Created | Folder ready for route handlers |
+| **Routes** | 📁 Created | Folder ready for API endpoints |
+| **Middlewares** | 📁 Created | Folder ready for custom middleware |
+
+### 🎯 Implementation Priority
+
+1. **High Priority** - Authentication system (register/login)
+2. **High Priority** - File upload middleware (multer setup)
+3. **Medium Priority** - Video CRUD operations
+4. **Medium Priority** - JWT authentication middleware
+5. **Low Priority** - Advanced features (pagination, search, etc.)
 
 ---
 
@@ -294,35 +479,51 @@ app.use(express.static());         // ❌ Wrong
 **Problem:** `Cannot use import statement outside a module`
 **Solution:** Ensure `"type": "module"` is in `package.json`
 
+### 5. Cloudinary File Upload Issues
+**Problem:** File not deleted after failed upload
+**Solution:** Always cleanup temp files in catch block:
+```javascript
+// ❌ Wrong - missing parameter
+fs.unlinkSync();
+
+// ✅ Correct - include file path
+fs.unlinkSync(localFilePath);
+```
+
+### 6. Missing Environment Variables
+**Problem:** Cloudinary/JWT not working
+**Solutions:**
+- Add all required environment variables to `.env`
+- Ensure `.env` file is in project root
+- Restart server after adding new variables
+
 ---
 
-## 📁 Future Structure (Scalable Architecture)
+## 📁 Current Advanced Structure (Implemented)
 
 ```
 src/
-├── controllers/
-│   ├── authController.js
-│   ├── userController.js
-│   └── videoController.js
-├── models/
-│   ├── User.js
-│   ├── Video.js
-│   └── Comment.js
-├── routes/
-│   ├── auth.js
-│   ├── users.js
-│   └── videos.js
-├── middlewares/
-│   ├── auth.js
-│   ├── upload.js
-│   └── validation.js
-├── utils/
-│   ├── cloudinary.js
-│   ├── apiError.js
-│   └── apiResponse.js
-└── config/
-    └── database.js
+├── controllers/          # ✅ Created (ready for implementation)
+├── models/              # ✅ Implemented
+│   ├── user.models.js   # ✅ User authentication model
+│   └── video.models.js  # ✅ Video model
+├── routes/              # ✅ Created (ready for implementation)  
+├── middlewares/         # ✅ Created (ready for implementation)
+├── utils/               # ✅ Fully implemented
+│   ├── ApiError.js      # ✅ Custom error handling
+│   ├── ApiResponse.js   # ✅ Standardized responses
+│   ├── AsyncHandler.js  # ✅ Async error wrapper
+│   └── Clodinary.js     # ✅ File upload service
+├── db/                  # ✅ Database connection
+└── app.js, index.js, constants.js  # ✅ Core files
 ```
+
+### Next Implementation Steps
+1. **Authentication Controller** - User registration/login
+2. **File Upload Middleware** - Using multer + cloudinary
+3. **Protected Routes** - JWT authentication middleware
+4. **Video CRUD Operations** - Upload, view, delete videos
+5. **User Profile Management** - Update profile, avatar upload
 
 ---
 
@@ -332,8 +533,10 @@ src/
 |----------|-------------|---------|
 | `DATABASE_URL` | MongoDB connection string | `mongodb+srv://user:pass@cluster.net` |
 | `PORT` | Server port number | `5000` |
-| `JWT_SECRET` | JWT signing secret (future) | `your-secret-key` |
-| `CLOUDINARY_*` | File upload config (future) | Various values |
+| `JWT_SECRET` | JWT signing secret | `your-secret-key` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | `your-cloud-name` |
+| `CLOUDINARY_API_KEY` | Cloudinary API key | `123456789012345` |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret | `your-api-secret` |
 
 ---
 
@@ -344,13 +547,25 @@ src/
 - **MongoDB & Mongoose:** [Documentation](https://mongoosejs.com/)
 - **Node.js:** [Documentation](https://nodejs.org/docs/)
 
+### Completed Features
+1. ✅ **Advanced Project Structure** - Scalable folder organization
+2. ✅ **User Model** - Complete with authentication (bcrypt + JWT)
+3. ✅ **Video Model** - Database schema for video content
+4. ✅ **File Upload Service** - Cloudinary integration
+5. ✅ **Error Handling** - Custom ApiError class
+6. ✅ **Response Standardization** - ApiResponse class
+7. ✅ **Async Error Handling** - AsyncHandler wrapper
+8. ✅ **Production Dependencies** - All major packages installed
+
 ### Next Steps
-1. Add user authentication (JWT)
-2. Implement file upload (Cloudinary)
-3. Create video CRUD operations
-4. Add input validation middleware
-5. Implement error handling middleware
-6. Add unit tests
+1. **Implement Authentication Controller** - Registration/login endpoints
+2. **Create File Upload Middleware** - Multer configuration
+3. **Add JWT Authentication Middleware** - Protected routes
+4. **Build Video CRUD Operations** - Upload, view, update, delete
+5. **Add Input Validation** - Request validation middleware
+6. **Implement User Profile Management** - Avatar/profile updates
+7. **Add Pagination** - Using mongoose-aggregate-paginate-v2
+8. **Add Unit Tests** - Testing framework setup
 
 ---
 
@@ -395,5 +610,5 @@ For issues and questions:
 
 ---
 
-**Last Updated:** November 29, 2025  
-**Version:** 1.0.0
+**Last Updated:** November 30, 2025  
+**Version:** 2.0.0 - Advanced Architecture Implementation
