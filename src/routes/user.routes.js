@@ -1,4 +1,4 @@
-import { userRegister,userLogin,userLogout,userRefreshAccessToken} from "../controllers/user.controllers.js";
+import { userRegister,userLogin,userLogout,userRefreshAccessToken,changePassword,changeUserInfo, changeAvatar} from "../controllers/user.controllers.js";
 import {Router} from "express"
 import {upload} from "../middlewares/multer.middlewares.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -17,9 +17,13 @@ router.route('/register').post(upload.fields(
         }
     ]
 ),userRegister)
+
 router.route('/login').post(userLogin);
 router.route('/logout').post(verifyJWT,userLogout);
 router.route('/refresh-token').post(userRefreshAccessToken)
+router.route('/change-password').post(verifyJWT,changePassword)
+router.route('/change-user-info').post(verifyJWT,changeUserInfo)
+router.route('/change-avatar').post(verifyJWT,upload.single("avatar"),changeAvatar)
 
 export default router
 
