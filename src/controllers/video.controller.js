@@ -7,6 +7,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import subscriptionModel from "../models/subscription.model.js";
 import mongoose from "mongoose";
+import {v2 as cloudinary} from 'cloudinary';
 
 const uploadVideo = AsyncHandler(async (req,res)=>{
     const {title,description} = req.body
@@ -86,4 +87,87 @@ const watchVideo = AsyncHandler(async (req,res)=>{
     ))
 });
 
-export {watchVideo,uploadVideo};
+const updateVid = AsyncHandler(async (req,res)=>{
+    const {id:videoId} = req.params
+    const {title, description,thumbnail} = req.body;
+
+    if(!videoId){
+        throw new ApiError(400,"Video ID is required");
+    }
+
+    const video = await Video.findById(videoId);
+    
+    if(!video){
+        throw new ApiError(404,"Video not found");
+    }
+
+    if(video.owner.toString() !== req.user._id.toString()){
+        throw new ApiError(400,"You can only update your own videos")
+    }
+
+    if (!title && !description) 
+        throw new ApiError(400,"Title and Desc are required")
+    
+    video.title = title;
+    video.description = description;
+
+    if(thumbnail){
+        video.thumbnail = thumbnail;
+    }
+    await video.save();
+
+    return res
+    .status(200)
+    .json(new ApiResponse(
+        200,
+        "Video updated successfully",
+        video
+    ));
+})
+
+const delVid = AsyncHandler(async (req,res)=>{
+    const {id:videoId} = req.params
+
+    if(!videoId){
+        throw new ApiError(400,"Video ID is required");
+    }
+
+    const video = await Video.findById(videoId);
+    
+    if(!video){
+        throw new ApiError(404,"Video not found");
+    }
+
+    if(video.owner.toString() !== req.user._id.toString()){
+        throw new ApiError(400,"You can only delete your own videos")
+    }
+
+    
+    const extractPublicId = (url) => {
+        const parts = url.split('/');
+        const fileName = parts[parts.length - 1];
+        return fileName.split('.')[0];
+    };
+
+    try {
+        const videoPublicId = extractPublicId(video.videoFile);
+        await cloudinary.uploader.destroy(videoPublicId, { resource_type: 'video' });
+
+        const thumbnailPublicId = extractPublicId(video.thumbnail);
+        await cloudinary.uploader.destroy(thumbnailPublicId);
+    } catch (error) {
+        console.error("Cloudinary deletion error:", error);
+    }
+
+    await Video.deleteOne({_id: videoId});
+
+    return res
+    .status(200)
+    .json(new ApiResponse(
+        200,
+        "Video deleted successfully",
+        null
+    ));
+});
+
+export {watchVideo,uploadVideo,updateVid,delVid};
