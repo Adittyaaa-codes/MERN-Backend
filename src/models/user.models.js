@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken'
 const userSchema = new mongoose.Schema({
     username:{
         type:String,
-        unique: true ,
+        unique: true,
         required: true,
         lowercase:true,
         trim : true,
@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema({
     coverImage:{
         type:String, //url
     },
+    watchHistory: [
+        {
+        type: Schema.Types.ObjectId,
+        ref: "Video"
+        }
+    ],
     password:{
         type:String,
         required: [true,'password is required'],
