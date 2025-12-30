@@ -9,6 +9,9 @@ import subscriptionModel from "../models/subscription.model.js";
 import mongoose from "mongoose";
 import {v2 as cloudinary} from 'cloudinary';
 
+
+
+
 const uploadVideo = AsyncHandler(async (req,res)=>{
     const {title,description} = req.body
 
@@ -44,6 +47,7 @@ const uploadVideo = AsyncHandler(async (req,res)=>{
         title:title,
         description:description,
         owner:user,
+        duration:videoUploaded.duration
     });
 
     return res
@@ -84,9 +88,11 @@ const getAllVids = AsyncHandler(async (req,res)=>{
     }
 
     const videos = await Video.find(filter)
+        .populate("owner", "username avatar") 
         .sort(sortOptions)
         .skip((page - 1) * limit)
         .limit(parseInt(limit));
+
 
     const totalVideos = await Video.countDocuments(filter);
 
@@ -101,34 +107,122 @@ const getAllVids = AsyncHandler(async (req,res)=>{
     }));
 });
 
-const watchVideo = AsyncHandler(async (req,res)=>{
-    const {id: videoId} = req.params;
+const watchVideo = AsyncHandler(async (req, res) => {
+  const { id: videoId } = req.params;
 
-    if(!videoId){
-        throw new ApiError(
-            400,
-            "Video not Found"
-        )
+  if (!videoId) {
+    throw new ApiError(400, "Video ID is required");
+  }
+
+  const video = await Video.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(videoId)
+      }
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $lookup:{
+                from:"subscriptions",
+                localField:"_id",
+                foreignField:"channel",
+                as:"subscribers"
+            }
+        },{
+            $lookup:{
+                from:"subscriptions",
+                localField:"_id",
+                foreignField:"subscriber",
+                as:"subscribedTo"
+            }
+        },{
+            $addFields:{
+                subsCount:{
+                    $size:"$subscribers"
+                },
+                i_SubbedTo:{
+                    $size:"$subscribedTo"
+                },
+                isSubscribed:{
+                    $cond:{
+                        if:{$in: [req.user?._id,"$subscribers.subscriber"]},
+                        then:true,
+                        else:false
+                    }
+                }
+            }
+        }
+        ]
+      }
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "video",
+        as: "likes"
+      }
+    },
+    {
+      $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "video",
+        as: "comments"
+      }
+    },
+    {
+      $addFields: {
+        owner: { $first: "$owner" },
+        likeCount: { $size: "$likes" },
+        commentCount: { $size: "$comments" },
+        isLiked: {
+          $cond: {
+            if: { $in: [req.user?._id, "$likes.likedBy"] },
+            then: true,
+            else: false
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        title: 1,
+        description: 1,
+        videoFile: 1,
+        thumbnail: 1,
+        views: 1,
+        createdAt: 1,
+        owner: 1,
+        likeCount: 1,
+        commentCount: 1,
+        isLiked: 1
+      }
     }
+  ]);
 
-    const video = await Video.findById(videoId);
+  if (!video.length) {
+    throw new ApiError(404, "Video not found");
+  }
 
-    if(!video){
-        throw new ApiError(404, "Video not found");
-    }
+  // Increment views safely
+  await Video.findByIdAndUpdate(videoId, {
+    $inc: { views: 1 }
+  });
 
-    // Safely increment views (handle undefined/null)
-    video.views = (video.views || 0) + 1;
-    await video.save();
+  console.log("Video Info--->",video[0])
 
-    return res
-    .status(200)
-    .json(new ApiResponse(
-        200,
-        "Fetch Video SuccessFully",
-        video
-    ))
+  return res.status(200).json(
+    new ApiResponse(200,"Video fetched successfully",video[0])
+  );
 });
+
 
 const updateVid = AsyncHandler(async (req,res)=>{
     const {id:videoId} = req.params

@@ -5,8 +5,11 @@ import User from "../models/user.models.js";
 
 const verifyJWT = AsyncHandler(async(req,res,next)=>{
     try {
+        // console.log("Cookies received:", req.cookies);
+        // console.log("Authorization header:", req.headers.authorization);
         const token = req.cookies?.AccessToken 
-        || req.header("Authorization")?.replace("Bearer ","");
+        || req.header("Authorization")?.replace("Bearer ","")
+        || req.header("x-access-token");
     
         if(!token){
             throw new ApiError(400,"Authorisation Failed")

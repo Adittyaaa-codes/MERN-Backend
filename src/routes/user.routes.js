@@ -1,4 +1,4 @@
-import { userRegister,userLogin,userLogout,userRefreshAccessToken,changePassword,changeUserInfo, changeAvatar,getUserInfo,getWatchhistory
+import {getCurrentUser,userRegister,userLogin,userLogout,userRefreshAccessToken,changePassword,changeUserInfo, changeAvatar,getUserInfo,getWatchhistory
 } from "../controllers/user.controllers.js";
 import {Router} from "express"
 import {upload} from "../middlewares/multer.middlewares.js"
@@ -6,6 +6,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router()
 
+router.get("/me", verifyJWT, getCurrentUser);
 router.route('/register').post(upload.fields(
     [
         {

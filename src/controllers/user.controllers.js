@@ -7,6 +7,12 @@ import jwt from "jsonwebtoken"
 import subscriptionModel from "../models/subscription.model.js";
 import mongoose from "mongoose";
 
+const getCurrentUser = AsyncHandler(async (req, res) => {
+  return res.status(200).json(
+    new ApiResponse(200, req.user, "User fetched")
+  );
+});
+
 const userRegister = AsyncHandler(async (req,res) =>{
     const {username,fullname,email,password} = req.body;
 
@@ -95,8 +101,9 @@ const userLogin = AsyncHandler(async (req,res)=>{
 
     const options = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // only secure over HTTPS in prod
-        sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax'
+        secure: false,
+        sameSite: "lax", // only secure over HTTPS in production
+        path: "/", 
     }
 
     // console.log("----------------------");
@@ -114,6 +121,20 @@ const userLogin = AsyncHandler(async (req,res)=>{
     .json(
         new ApiResponse(200, 'Login successful!!', userInfo)
     );
+
+//     res
+//   .cookie("AccessToken", "test_access", {
+//     httpOnly: true,
+//     secure: false,
+//     sameSite: "lax",
+//   })
+//   .cookie("RefreshToken", "test_refresh", {
+//     httpOnly: true,
+//     secure: false,
+//     sameSite: "lax",
+//   })
+//   .json({ ok: true });
+
 });
 
 const userLogout = AsyncHandler(async(req,res)=>{
@@ -129,11 +150,10 @@ const userLogout = AsyncHandler(async(req,res)=>{
     }
 
     res
-    .clearCookie("refreshToken",options)
-    .clearCookie("accessToken",options)
+    .clearCookie("RefreshToken",options)
+    .clearCookie("AccessToken",options)
     .json(new ApiResponse(200,"user logged-out successfully"));
-}
-);
+});
 
 const userRefreshAccessToken = AsyncHandler(async(req,res)=>{
 
@@ -302,7 +322,7 @@ const updateUserCoverImage = AsyncHandler(async(req, res) => {
     .json(
         new ApiResponse(200, user, "Cover image updated successfully")
     )
-})
+});
 
 const getUserInfo = AsyncHandler(async (req,res)=>{
     const {username} = req.params;
@@ -371,7 +391,7 @@ const getUserInfo = AsyncHandler(async (req,res)=>{
         .json(
             new ApiResponse(200,channel[0], "User channel fetched successfully")
         );
-    });
+});
 
 const getWatchhistory = AsyncHandler(async (req,res)=>{
 
@@ -448,4 +468,4 @@ const getWatchhistory = AsyncHandler(async (req,res)=>{
 
 export {userRegister,userLogin,userLogout,userRefreshAccessToken,
         changePassword,changeUserInfo,changeAvatar,getUserInfo,getWatchhistory
-    ,updateUserCoverImage} 
+    ,updateUserCoverImage,getCurrentUser} 

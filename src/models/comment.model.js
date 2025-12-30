@@ -11,6 +11,18 @@ const commentSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "Video"
         },
+        post:{
+            type:Schema.Types.ObjectId,
+            ref: "Post"
+        },
+        reply:{
+            type:Schema.Types.ObjectId,
+            ref: "Comment"
+        },
+        like:{
+            type:Schema.Types.ObjectId,
+            ref:"Like"
+        },
         owner: { // the person who commented
             type: Schema.Types.ObjectId,
             ref: "User"
