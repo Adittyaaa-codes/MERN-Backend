@@ -114,11 +114,11 @@ const watchVideo = AsyncHandler(async (req, res) => {
     throw new ApiError(400, "Video ID is required");
   }
 
+  const userId = req.user?._id || null;
+
   const video = await Video.aggregate([
     {
-      $match: {
-        _id: new mongoose.Types.ObjectId(videoId)
-      }
+      $match: { _id: new mongoose.Types.ObjectId(videoId) }
     },
     {
       $lookup: {
@@ -128,36 +128,33 @@ const watchVideo = AsyncHandler(async (req, res) => {
         as: "owner",
         pipeline: [
           {
-            $lookup:{
-                from:"subscriptions",
-                localField:"_id",
-                foreignField:"channel",
-                as:"subscribers"
+            $lookup: {
+              from: "subscriptions",
+              localField: "_id",
+              foreignField: "channel",
+              as: "subscribers"
             }
-        },{
-            $lookup:{
-                from:"subscriptions",
-                localField:"_id",
-                foreignField:"subscriber",
-                as:"subscribedTo"
-            }
-        },{
-            $addFields:{
-                subsCount:{
-                    $size:"$subscribers"
-                },
-                i_SubbedTo:{
-                    $size:"$subscribedTo"
-                },
-                isSubscribed:{
-                    $cond:{
-                        if:{$in: [req.user?._id,"$subscribers.subscriber"]},
-                        then:true,
-                        else:false
-                    }
+          },
+          {
+            $addFields: {
+              subsCount: { $size: "$subscribers" },
+              isSubscribed: {
+                $cond: {
+                  if: { $in: [userId, "$subscribers.subscriber"] },
+                  then: true,
+                  else: false
                 }
+              }
             }
-        }
+          },
+          {
+            $project: {
+              username: 1,
+              avatar: 1,
+              subsCount: 1,
+              isSubscribed: 1
+            }
+          }
         ]
       }
     },
@@ -184,7 +181,7 @@ const watchVideo = AsyncHandler(async (req, res) => {
         commentCount: { $size: "$comments" },
         isLiked: {
           $cond: {
-            if: { $in: [req.user?._id, "$likes.likedBy"] },
+            if: { $in: [userId, "$likes.likedBy"] },
             then: true,
             else: false
           }
@@ -211,17 +208,13 @@ const watchVideo = AsyncHandler(async (req, res) => {
     throw new ApiError(404, "Video not found");
   }
 
-  // Increment views safely
-  await Video.findByIdAndUpdate(videoId, {
-    $inc: { views: 1 }
-  });
-
-  console.log("Video Info--->",video[0])
+  await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
 
   return res.status(200).json(
-    new ApiResponse(200,"Video fetched successfully",video[0])
+    new ApiResponse(200, video[0], "Video fetched successfully")
   );
 });
+
 
 
 const updateVid = AsyncHandler(async (req,res)=>{

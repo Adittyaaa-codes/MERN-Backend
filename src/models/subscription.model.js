@@ -11,5 +11,10 @@ const subsSchema = new Schema({
     }
 },{timestamps:true});
 
-const subs = mongoose.model("Subscription",subsSchema)
-export default {subs};
+subsSchema.index(
+  { subscriber: 1, subscribedTo: 1 },
+  { unique: true }
+);
+
+const Subscription = mongoose.model("Subscription",subsSchema)
+export default Subscription;
