@@ -110,12 +110,16 @@ const userLogin = AsyncHandler(async (req, res) => {
     const userInfo = await User.findById(userFound._id).select("-refreshToken -password");
 
     res
-        .status(200)
-        .cookie('AccessToken', AccessToken, cookieOptions)
-        .cookie('RefreshToken', RefreshToken, refreshCookieOptions)
-        .json(
-            new ApiResponse(200, 'Login successful!!', userInfo)
-        );
+    .status(200)
+    .cookie('AccessToken', AccessToken, cookieOptions)
+    .cookie('RefreshToken', RefreshToken, refreshCookieOptions)
+    .json(
+        new ApiResponse(200, {
+            user: userInfo,
+            accessToken: AccessToken, 
+            refreshToken: RefreshToken 
+        }, 'Login successful!!')
+    );
 });
 
 const userLogout = AsyncHandler(async (req, res) => {
