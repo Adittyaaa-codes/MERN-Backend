@@ -11,11 +11,8 @@ app.use(express.urlencoded({ extended: true ,limit:'16kb'}));
 app.use(express.static("public"));
 app.use(cookieParser());
 app.use(cors({
-  origin: ['http://localhost:5173', 
-    'https://your-lovable-preview-url.lovableproject.com',
-    'https://0c253690-499b-46a2-b672-fdd35af9f9dc.lovableproject.com',
-    'https://youtube-clone-99.lovable.app',
-    '/\.lovable\.app$/'
+  origin: [
+    'https://youtube-clone-99.onrender.com'
   ],
   credentials: true,
   optionsSuccessStatus: 200
