@@ -5,8 +5,16 @@ import ApiResponse from "../utils/ApiResponse.js"
 import AsyncHandler from "../utils/AsyncHandler.js"
 
 const toggleVideoLike = AsyncHandler(async (req, res) => {
-  const { videoId } = req.params;
+  const { id: videoId } = req.params;
   const userId = req.user._id;
+
+  if (!videoId) {
+    throw new ApiError(400, "Video ID is required");
+  }
+
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video ID");
+  }
 
   const existingLike = await Like.findOne({
     video: videoId,
@@ -29,7 +37,7 @@ const toggleVideoLike = AsyncHandler(async (req, res) => {
   const likeCount = await Like.countDocuments({ video: videoId });
 
   return res.status(200).json(
-    new ApiResponse(200, { isLiked, likeCount }, "Like toggled")
+    new ApiResponse(200, { isLiked, likeCount }, "Like toggled successfully")
   );
 });
 
@@ -65,7 +73,7 @@ const toggleCommentLike = AsyncHandler(async (req, res) => {
 const getLikedVideos = AsyncHandler(async (req, res) => {
     try {
         const likedVideos = await Like.find({
-            likedBy: mongoose.Types.ObjectId(req.user?._id),
+            likedBy: new mongoose.Types.ObjectId(req.user?._id),
             video: { $ne: null }
         }).populate('video')
     

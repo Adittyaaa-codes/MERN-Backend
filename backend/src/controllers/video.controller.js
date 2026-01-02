@@ -210,6 +210,23 @@ const watchVideo = AsyncHandler(async (req, res) => {
 
   await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
 
+  // Add video to user's watch history if user is logged in
+  if (userId) {
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $pull: { watchHistory: videoId }, // Remove if already exists
+      }
+    );
+    
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $push: { watchHistory: { $each: [videoId], $position: 0 } } // Add at beginning
+      }
+    );
+  }
+
   return res.status(200).json(
     new ApiResponse(200, video[0], "Video fetched successfully")
   );

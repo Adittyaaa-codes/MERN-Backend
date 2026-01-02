@@ -5,14 +5,14 @@ const subsSchema = new Schema({
         type:Schema.Types.ObjectId,
         ref:"User"
     },
-    subscribedTo:{
+    channel:{
         type:Schema.Types.ObjectId,
         ref:"User"
     }
 },{timestamps:true});
 
 subsSchema.index(
-  { subscriber: 1, subscribedTo: 1 },
+  { subscriber: 1, channel: 1 },
   { unique: true }
 );
 
