@@ -93,18 +93,22 @@ const userLogin = AsyncHandler(async (req, res) => {
     userFound.refreshToken = RefreshToken;
     await userFound.save();
 
+    const isProduction = process.env.NODE_ENV === 'production';
+
     const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 24 * 60 * 60 * 1000
+        secure: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/'
     };
 
     const refreshCookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        secure: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/'
     };
 
     const userInfo = await User.findById(userFound._id).select("-refreshToken -password");
@@ -129,11 +133,13 @@ const userLogout = AsyncHandler(async (req, res) => {
         { new: true },
     );
 
+    const isProduction = process.env.NODE_ENV === 'production';
+
     const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 0
+        secure: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        path: '/'
     };
 
     res
@@ -177,18 +183,22 @@ const userRefreshAccessToken = AsyncHandler(async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
+    const isProduction = process.env.NODE_ENV === 'production';
+
     const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 24 * 60 * 60 * 1000
+        secure: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/'
     };
 
     const refreshCookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        secure: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/'
     };
 
     res

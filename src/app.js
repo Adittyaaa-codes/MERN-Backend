@@ -11,11 +11,25 @@ app.use(express.urlencoded({ extended: true ,limit:'16kb'}));
 app.use(express.static("public"));
 app.use(cookieParser());
 app.use(cors({
-  origin: [
-    'https://youtube-clone-99.onrender.com'
-  ],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://youtube-clone-99.onrender.com',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173'
+    ];
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['set-cookie']
 }));
 
 import userRouter from './routes/user.routes.js'
