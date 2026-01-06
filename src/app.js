@@ -14,11 +14,8 @@ app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = [
       'https://youtube-clone-99.onrender.com',
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:5173'
+      'http://localhost:5173'
     ];
-    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
