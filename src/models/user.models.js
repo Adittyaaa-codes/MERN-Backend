@@ -20,7 +20,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, "Full name is required"],
         trim: true,
-        index: true,
         minlength: [2, "Full name must be at least 2 characters"],
         maxlength: [100, "Full name cannot exceed 100 characters"]
     },
@@ -30,7 +29,6 @@ const userSchema = new mongoose.Schema({
         unique: true,
         lowercase: true,
         trim: true,
-        index: true,
         match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Please provide a valid email"]
     },
     avatar: {
@@ -80,7 +78,6 @@ const userSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-userSchema.index({ email: 1 }, { unique: true });
 
 userSchema.pre("save", async function(next) {
     if (!this.isModified("password")) return next();
