@@ -8,40 +8,6 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "https:", "blob:"],
-            connectSrc: ["'self'"],
-            fontSrc: ["'self'"],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'", "https:"],
-            frameSrc: ["'none'"]
-        }
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
-
-const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 500,
-    message: {
-        statusCode: 429,
-        message: "Too many requests from this IP. Please try again later.",
-        data: null,
-        success: false
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: () => process.env.NODE_ENV === "test"
-});
-
-app.use(globalLimiter);
-
 const allowedOrigins = [
     process.env.FRONTEND_URL || "http://localhost:5173",
     "https://youtube-clone-99.onrender.com",
@@ -75,6 +41,40 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     exposedHeaders: ["set-cookie"]
 }));
+
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:", "blob:"],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'", "https:"],
+            frameSrc: ["'none'"]
+        }
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+    message: {
+        statusCode: 429,
+        message: "Too many requests from this IP. Please try again later.",
+        data: null,
+        success: false
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === "test"
+});
+
+app.use(globalLimiter);
 
 app.use(express.json({ limit: "16kb" }));
 
