@@ -8,6 +8,15 @@ const app = express();
 
 app.set("trust proxy", 1);
 
+app.options("*", (req, res) => {
+    console.log("Preflight request received for:", req.url);
+    res.header("Access-Control-Allow-Origin", "https://youtube-clone-99.onrender.com");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Accept");
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.sendStatus(200);
+});
+
 const allowedOrigins = [
     process.env.FRONTEND_URL || "http://localhost:5173",
     "https://youtube-clone-99.onrender.com",
@@ -22,13 +31,19 @@ if (process.env.NODE_ENV !== "production") {
     );
 }
 
+console.log("Allowed CORS origins:", allowedOrigins);
+
 app.use(cors({
     origin: function(origin, callback) {
+        console.log("CORS request from origin:", origin);
+        
         if (!origin) {
+            console.log("No origin header - allowing request");
             return callback(null, true);
         }
         
         if (allowedOrigins.includes(origin)) {
+            console.log("Origin allowed:", origin);
             callback(null, true);
         } else {
             console.warn(`CORS blocked origin: ${origin}`);
@@ -38,7 +53,7 @@ app.use(cors({
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     exposedHeaders: ["set-cookie"]
 }));
 
