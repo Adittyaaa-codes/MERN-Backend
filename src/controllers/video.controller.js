@@ -1,6 +1,6 @@
 import AsyncHandler from "../utils/AsyncHandler.js"
 import ApiError from "../utils/ApiError.js"
-import { Video } from "../models/video.models.js"
+import Video from "../models/video.models.js"
 import User  from "../models/user.models.js"
 import uploadCloudinary from "../utils/Clodinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
