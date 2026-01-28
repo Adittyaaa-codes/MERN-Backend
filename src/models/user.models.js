@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
@@ -121,7 +122,6 @@ userSchema.methods.generateAccessToken = function() {
 };
 
 userSchema.methods.generateRefreshToken = function() {
-    const crypto = require("crypto");
     return jwt.sign(
         {
             _id: this._id,
